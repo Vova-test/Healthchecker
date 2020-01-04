@@ -101,7 +101,7 @@ namespace Mylibs;
                 $mc = new \Memcached();
                 $mc->addServer($parameters['credentials']['host'] ?? "localhost", $parameters['credentials']['port'] ?? 11211);
                 $mc->set("foo", "TRUE");
-                $this->status[] = $status.($mc->get("foo") ?? "FOLSE");
+                $this->status[] = empty($status.($mc->get("foo"))) ? "TRUE" :"FALSE";
                 
             } catch (Exception $e) {
 
@@ -120,7 +120,6 @@ namespace Mylibs;
                 $this->status[] = $status.($redis->ping() ? "TRUE":"FALSE");
                 
             } catch (Exception $e) {
-
                 $this->errors[] = ($e->getMessage());                
             }            
         }

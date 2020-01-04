@@ -1,4 +1,5 @@
 <?php
+    phpinfo();
     define("ROOT_PATH", dirname(__FILE__, 2));
     define("SITE_URL", "http://myproject.loc");
     session_start();
@@ -60,6 +61,6 @@
         'path' => dirname(dirname(__FILE__)).'/storage'
     ]);
     //var_dump($checker->test()); 
-    $checker->page(); 
+    //$checker->page(); 
 
 ?>
