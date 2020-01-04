@@ -59,6 +59,7 @@
         'type' => 'folder_is_writable',
         'path' => dirname(dirname(__FILE__)).'/storage'
     ]);
-    //var_dump($checker->test());  
+    //var_dump($checker->test()); 
+    $checker->page(); 
 
 ?>
