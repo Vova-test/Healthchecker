@@ -2,15 +2,17 @@
 
 namespace Mylibs;
 
-use \Memcached;
-use \PDO;
-use \PDOException;
-use \Redis;
-use \RedisException;
+use Mylibs\TestHealthInterface;
+use Mylibs\TestService;
+use Mylibs\TestMySQL;
+use Mylibs\TestPostgreSQL;
+use Mylibs\TestMemcached;
+use Mylibs\TestRedis;
+use Mylibs\TestFreeSpace;
+use Mylibs\TestWritableFolder;
 
 class HealthChecker
 {
-
     protected $parameters = [];
     protected $errors = [];
     protected $status = [];
@@ -30,139 +32,43 @@ class HealthChecker
 
     public function test()
     {
-        foreach ($this->parameters as $parameter) {
-            if (empty($parameter)) {
+        $testService = new TestService;
+        $a = 1;
+        foreach ($this->parameters as $test) {
+            if (empty($test)) {
                 $this->errors[] = 'Parameters are not fuond!';
                 continue;
             }
 
-            if (empty($parameter['type']) || !array_key_exists(strtolower($parameter['type']), $this->type)) {
-                $this->errors[] = 'Type =' . ($parameter['type']) ?? '' . ' unknown';
+            if (empty($test['type']) || !array_key_exists(strtolower($test['type']), $this->type)) {
+                $this->errors[] = 'Type =' . $test['type'] ?? '' . ' unknown';
                 continue;
             }
-            $this->{"test" . $this->type[$parameter['type']]}($parameter);
+            $obj = "Mylibs\\Test" . $this->type[$test['type']];
+
+            $objectTest = new $obj();
+
+            $err = $testService->run($objectTest,$test);
+            if (is_array($err)) {
+                $this->errors[] = $err;
+            }else{
+                $this->status[] = $err;  
+            }
+            $a++;
+            if ($a > 2) {
+                break;
+            }
         }
-        return (empty($this->errors) ? true : $this->errors);
+        return empty($this->errors) ? true : $this->errors;
     }
 
-    public function page()
+    /*public function page()
     {
         $this->status = [];
-        foreach ($this->parameters as $parameter) {
-            $this->{"test" . $this->type[$parameter['type']]}($parameter);
+        foreach ($this->parameters as $test) {
+            $this->{"test" . $this->type[$test['type']]}($test);
         }
         $data = $this->status;
         require_once(dirname(__FILE__) . "/page.php");
-    }
-
-    protected function testMySQL($parameters)
-    {
-        try {
-            $dsn = $parameters['type'] . ":host=" . ($parameters['credentials']['host'] ?? "localhost") . ";port=" . ($parameters['credentials']['port'] ?? '3306') . ";dbname=" . $parameters['credentials']['datebase'];
-
-            $pdo = new PDO(
-                $dsn, $parameters['credentials']['user'], $parameters['credentials']['password'], [
-                        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES UTF8",
-                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
-                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-                    ]
-            );
-
-            $timeMySQL = time();
-            $stmt = $pdo->query($parameters['query'] ?? "show tables");
-            $timeMySQL = time() - $timeMySQL;
-            $status = 'MySQL dbName="' . $parameters['credentials']['datebase'] . '" status = ';
-
-            if (!empty($parameters['timeout']) && $parameters['timeout'] < $timeMySQL) {
-                $this->status[] = $status . 'FALSE';
-            } else {
-                $this->status[] = $status . 'TRUE';
-            }
-        } catch (PDOException $e) {
-            $this->errors[] = $e->getMessage();
-        }
-    }
-
-    protected function testPostgreSQL($parameters)
-    {
-        try {
-            $pgdsn = $parameters['type'] . ":host=" . ($parameters['credentials']['host'] ?? "localhost") . ";port=" . ($parameters['credentials']['port'] ?? '5432') . ";dbname=" . $parameters['credentials']['datebase'] . ";user=" . $parameters['credentials']['user'] . ";password=" . $parameters['credentials']['password'];
-
-            $dbh = new PDO($pgdsn);
-            $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            $timeMySQL = time();
-            $stmt = $dbh->query(
-                $parameters['query'] ?? "SELECT 
-                                                        * 
-                                                    FROM
-                                                        pg_catalog.pg_tables 
-                                                    WHERE
-                                                        schemaname != 'pg_catalog' 
-                                                        AND schemaname != 'information_schema'"
-            );
-            $timeMySQL = time() - $timeMySQL;
-            $status = 'PostgreSQL dbName="' . $parameters['credentials']['datebase'] . '" status = ';
-
-            if (!empty($parameters['timeout']) && $parameters['timeout'] < $timeMySQL) {
-                $this->status[] = $status . 'FALSE';
-            } else {
-                $this->status[] = $status . 'TRUE';
-            }
-        } catch (PDOException $e) {
-            $this->errors[] = ($e->getMessage());
-        }
-    }
-
-    protected function testMemcached($parameters)
-    {
-        try {
-            $status = 'Memcached status = ';
-            $mc = new Memcached();
-            $mc->addServer(
-                $parameters['credentials']['host'] ?? "localhost",
-                $parameters['credentials']['port'] ?? 11211
-            );
-            $mc->set("foo", "TRUE");
-            $this->status[] = $status . (!empty($mc->get("foo")) ? "TRUE" : "FALSE");
-        } catch (Exception $e) {
-            $this->errors[] = ($e->getMessage());
-        }
-    }
-
-    protected function testRedis($parameters)
-    {
-        try {
-            $status = 'Redis status = ';
-            $redis = new Redis();
-            $redis->pconnect(
-                $parameters['credentials']['host'] ?? "localhost",
-                $parameters['credentials']['port'] ?? 6379
-            );
-
-            $this->status[] = $status . ($redis->ping() ? "TRUE" : "FALSE");
-        } catch (RedisException $e) {
-            $this->errors[] = ($e->getMessage());
-        }
-    }
-
-    protected function testFreeSpace()
-    {
-        try {
-            $this->status[] = "Free space = " . disk_free_space("/");
-        } catch (Exception $e) {
-            $this->errors[] = ($e->getMessage());
-        }
-    }
-
-    protected function testWritableFolder($parameters)
-    {
-        try {
-            $this->status[] = 'Folder "' . $parameters['path'] . '" is writable = ' . (is_writable(
-                    $parameters['path']
-                ) ? "TRUE" : "FALSE");
-        } catch (Exception $e) {
-            $this->errors[] = ($e->getMessage());
-        }
-    }
+    }*/
 }

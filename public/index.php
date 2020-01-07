@@ -6,7 +6,7 @@ require_once(ROOT_PATH . "/vendor/autoload.php");
 
 /*MyLibs*/
 
-use \Mylibs\HealthChecker;
+use Mylibs\HealthChecker;
 
 $checker = new HealthChecker();
 
@@ -18,7 +18,7 @@ $checker->add(
             'port' => 3306,
             'user' => 'root',
             'password' => 'root',
-            'datebase' => 'lesson'
+            'database' => 'lesson'
         ],
         'query' => 'SELECT
                         * 
@@ -36,7 +36,7 @@ $checker->add(
             'port' => 5432,
             'user' => 'postgresql1',
             'password' => '1111',
-            'datebase' => 'lessons'
+            'database' => 'lessons'
         ],
         'query' => 'SELECT
                         * 
@@ -79,7 +79,7 @@ $checker->add(
         'path' => dirname(dirname(__FILE__)) . '/storage'
     ]
 );
-//var_dump($checker->test());
-$checker->page();
+var_dump($checker->test());
+//$checker->page();
 
 ?>
