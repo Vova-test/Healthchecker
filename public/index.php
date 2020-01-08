@@ -69,7 +69,7 @@ $checker->add(
 $checker->add(
     [
         'type' => 'free_space',
-        'threshold' => 12345
+        'threshold' => 812215500
     ]
 );
 

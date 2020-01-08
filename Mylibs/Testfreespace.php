@@ -7,26 +7,31 @@ use Mylibs\TestHealthInterface;
 
 class TestFreeSpace implements TestHealthInterface
 {
+    protected $error;
+    protected $status;
+    protected $threshold;
 
-    public function testing(){ return "TestFreeSpace"; }
-
-    /*protected function testFreeSpace()
+    public function testing($data = [], $page = false)
     {
+        $this->error = '';
+        $this->threshold = $data['threshold'];
+
         try {
-            $this->status[] = "Free space = " . disk_free_space("/");
+            $diskSpace = disk_free_space("/");
+            $mess = "disk space: available $diskSpace bytes need more than $this->threshold bytes";
+
+            if ($this->threshold < $diskSpace) {
+                $this->status = "Free " . $mess;
+            } else {
+                $this->error = "There is not enough " . $mess;
+            }
         } catch (Exception $e) {
-            $this->errors[] = ($e->getMessage());
+            $this->error = ($e->getMessage());
+        }
+        if ($page) {
+            return $this->status ?? $this->error;
+        } else {
+            return $this->error;
         }
     }
-
-    protected function testWritableFolder($parameters)
-    {
-        try {
-            $this->status[] = 'Folder "' . $parameters['path'] . '" is writable = ' . (is_writable(
-                    $parameters['path']
-                ) ? "TRUE" : "FALSE");
-        } catch (Exception $e) {
-            $this->errors[] = $e->getMessage();
-        }
-    }*/
 }

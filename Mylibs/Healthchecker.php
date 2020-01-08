@@ -33,42 +33,45 @@ class HealthChecker
     public function test()
     {
         $testService = new TestService;
-        $a = 1;
         foreach ($this->parameters as $test) {
             if (empty($test)) {
-                $this->errors[] = 'Parameters are not fuond!';
+                $this->errors[] = 'parameters are not fuond!';
                 continue;
             }
 
             if (empty($test['type']) || !array_key_exists(strtolower($test['type']), $this->type)) {
-                $this->errors[] = 'Type =' . $test['type'] ?? '' . ' unknown';
+                $this->errors[] = 'type =' . $test['type'] ?? '""' . ' - unknown';
                 continue;
             }
             $obj = "Mylibs\\Test" . $this->type[$test['type']];
 
             $objectTest = new $obj();
 
-            $err = $testService->run($objectTest,$test);
-            if (is_array($err)) {
-                $this->errors[] = $err;
-            }else{
-                $this->status[] = $err;  
-            }
-            $a++;
-            if ($a > 2) {
-                break;
+            $err = $testService->run($objectTest, $test);
+
+            if (!empty($err)) {
+                $this->errors[] = $this->type[$test['type']] . " - " . $err;
             }
         }
         return empty($this->errors) ? true : $this->errors;
     }
 
-    /*public function page()
+    public function page()
     {
+        $testService = new TestService;
+
         $this->status = [];
+
         foreach ($this->parameters as $test) {
-            $this->{"test" . $this->type[$test['type']]}($test);
+            $obj = "Mylibs\\Test" . $this->type[$test['type']];
+
+            $objectTest = new $obj();
+
+            $err = $testService->run($objectTest, $test, true);
+
+            $this->status[] = $this->type[$test['type']] . " - " . $err;
         }
         $data = $this->status;
         require_once(dirname(__FILE__) . "/page.php");
-    }*/
+    }
 }

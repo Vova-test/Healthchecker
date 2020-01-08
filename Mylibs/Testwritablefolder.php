@@ -2,22 +2,35 @@
 
 namespace Mylibs;
 
-use \Exception;
 use Mylibs\TestHealthInterface;
 
 class TestWritableFolder implements TestHealthInterface
 {
+    protected $error;
+    protected $status;
+    protected $path;
 
-    public function testing(){ return "TestWritableFolder"; }
-
-    /*protected function testWritableFolder($parameters)
+    public function testing($data = [], $page = false)
     {
-        try {
-            $this->status[] = 'Folder "' . $parameters['path'] . '" is writable = ' . (is_writable(
-                    $parameters['path']
-                ) ? "TRUE" : "FALSE");
-        } catch (Exception $e) {
-            $this->errors[] = $e->getMessage();
+        $this->error = '';
+        $this->path = $data['path'];
+
+        clearstatcache(true, $this->path);
+
+        if (file_exists($this->path)) {
+            if (is_writable($this->path)) {
+                $this->status = "The folder or file $this->path is writable";
+            } else {
+                $this->error = "The folder or file $this->path is not writable";
+            }
+        } else {
+            $this->error = "The folder or file $this->path does not exist";
         }
-    }*/
+
+        if ($page) {
+            return $this->status ?? $this->error;
+        } else {
+            return $this->error;
+        }
+    }
 }

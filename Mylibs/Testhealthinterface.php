@@ -2,7 +2,8 @@
 
 namespace Mylibs;
 
-interface TestHealthInterface {
+interface TestHealthInterface
+{
     public function testing($data);
 }
 

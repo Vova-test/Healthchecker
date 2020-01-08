@@ -8,13 +8,14 @@ use Mylibs\TestHealthInterface;
 
 class TestPostgreSQL implements TestHealthInterface
 {
-    protected $error = [];
+    protected $error;
+    protected $status;
     protected $query;
     protected $timeout;
 
-    public function testing($data = [])
+    public function testing($data = [], $page = false)
     {
-        $this->error = [];
+        $this->error = '';
         $this->timeout = $data['timeout'] ?? 0;
         $this->query = $data['query'] ?? "SELECT 
                                               * 
@@ -25,27 +26,36 @@ class TestPostgreSQL implements TestHealthInterface
                                               AND schemaname != 'information_schema'";
 
         $this->validDsnConfig($data['credentials']);
-        return $this->error;
+
+        if ($page) {
+            return $this->status ?? $this->error;
+        } else {
+            return $this->error;
+        }
     }
 
     protected function validDsnConfig($config = [])
     {
         if (empty($config['database'])) {
-            $this->error = 'Testing MySQL - "Name Database is empty"';
+            $this->error = "name natabase is empty";
             return;
         }
 
         if (empty($config['user'])) {
-            $this->error = 'Testing MySQL - "User Database is empty"';
+            $this->error = "user database is empty";
             return;
         }
 
         if (empty($config['password'])) {
-            $this->error = 'Testing MySQL - "Password Database is empty"';
+            $this->error = "password database is empty";
             return;
         }
 
-        $dsn = "pgsql:host=" . ($config['host'] ?? "localhost") . ";port=" . ($config['port'] ?? '3306') . ";dbname=" . $config['database'] . ";user=" . $config['user'] . ";password=" . $config['password'];
+        $dsn = "pgsql:host=" . ($config['host'] ?? "localhost")
+            . ";port=" . ($config['port'] ?? '3306')
+            . ";dbname=" . $config['database']
+            . ";user=" . $config['user']
+            . ";password=" . $config['password'];
 
         $this->connectDb($dsn);
     }
@@ -54,29 +64,31 @@ class TestPostgreSQL implements TestHealthInterface
     {
         try {
             $pdo = new PDO($dsn);
+
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $this->timing($pdo);
-
         } catch (PDOException $e) {
-            $this->error[] = $e->getMessage(); 
-        }           
+            $this->error = $e->getMessage();
+        }
     }
 
     protected function timing($pdo)
     {
         try {
-            $timeMySQL = time();
-                $stmt = $pdo->query($this->query);
-            $timeMySQL = time() - $timeMySQL;
+            $timeDb = time();
 
-            if (!empty($this->timeout) && $this->timeout < $timeMySQL) {
-                $this->errors[] = 'Error by timeout';
+            $stmt = $pdo->query($this->query);
+
+            $timeDb = time() - $timeDb;
+
+            if (!empty($this->timeout) && $this->timeout < $timeDb) {
+                $this->error = 'error by timeout';
             } else {
-                $this->status = "PostgreSQL is Ok. Timeout = $timeMySQL";
+                $this->status = "it is Ok. timeout = " . $timeDb;
             }
         } catch (PDOException $e) {
-            $this->error[] = $e->getMessage();
-        }        
+            $this->error = $e->getMessage();
+        }
     }
 }
